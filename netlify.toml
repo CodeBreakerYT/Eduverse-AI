@@ -1,0 +1,25 @@
+[build]
+  base = "client"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "../netlify/functions"
+  node_bundler = "esbuild"
+
+# Client calls fetch('/api/tutor') the same way in dev (proxied to the local
+# Express server) and in production (proxied to the Netlify Function below).
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# React Router client-side routes (e.g. /world, /dashboard) must fall back
+# to index.html so direct links and refreshes don't 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
