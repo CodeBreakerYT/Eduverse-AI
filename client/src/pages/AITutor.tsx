@@ -59,7 +59,7 @@ export default function AITutor() {
         </div>
         <div>
           <h1 className="font-display text-xl font-semibold">AI Tutor</h1>
-          <p className="text-xs text-[var(--ev-text-dim)]">Powered by Gemini · Adapted to {profile.name || 'your'} profile</p>
+          <p className="text-xs text-[var(--ev-text-dim)]">Powered by Groq · Adapted to {profile.name || 'your'} profile</p>
         </div>
       </div>
 

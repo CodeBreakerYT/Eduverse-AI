@@ -1,7 +1,7 @@
 // Shared between server/index.js (local dev) and netlify/functions/tutor.js
 // (production) so the two never drift apart.
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 function buildSystemPrompt(profile) {
   if (!profile) {
@@ -28,30 +28,37 @@ Adapt your explanation style to the student's preferences:
 - Be warm, encouraging, and never condescending.`;
 }
 
-async function callGemini({ message, profile, history, apiKey }) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+async function callGroq({ message, profile, history, apiKey }) {
+  const url = "https://api.groq.com/openai/v1/chat/completions";
 
-  const contents = [];
+  const messages = [
+    { role: "system", content: buildSystemPrompt(profile) },
+  ];
+
   (history || []).forEach((h) => {
-    contents.push({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.text }] });
+    messages.push({ role: h.role === "assistant" ? "assistant" : "user", content: h.text });
   });
-  contents.push({ role: "user", parts: [{ text: message }] });
+  messages.push({ role: "user", content: message });
 
   const body = {
-    contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(profile) }] },
-    generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
+    model: GROQ_MODEL,
+    messages,
+    temperature: 0.8,
+    max_tokens: 2048,
   };
 
   const r = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
     body: JSON.stringify(body),
   });
 
   if (!r.ok) {
     const detail = await r.text();
-    const err = new Error("Gemini API error");
+    const err = new Error("Groq API error");
     err.status = 502;
     err.detail = detail;
     throw err;
@@ -59,12 +66,12 @@ async function callGemini({ message, profile, history, apiKey }) {
 
   const data = await r.json();
   return (
-    data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ||
+    data?.choices?.[0]?.message?.content ||
     "I couldn't generate a response — try rephrasing your question."
   );
 }
 
 const OFFLINE_REPLY =
-  "(Offline demo mode — no Gemini API key configured on the server.) I'd normally explain this adaptively based on your profile. Try asking me about a specific topic like 'explain BFS' or 'I don't understand recursion'.";
+  "(Offline demo mode — no Groq API key configured on the server.) I'd normally explain this adaptively based on your profile. Try asking me about a specific topic like 'explain BFS' or 'I don't understand recursion'.";
 
-module.exports = { GEMINI_MODEL, buildSystemPrompt, callGemini, OFFLINE_REPLY };
+module.exports = { GROQ_MODEL, buildSystemPrompt, callGroq, OFFLINE_REPLY };

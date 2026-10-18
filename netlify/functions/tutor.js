@@ -1,4 +1,4 @@
-const { callGemini, OFFLINE_REPLY } = require("../../shared/tutorPrompt");
+const { callGroq, OFFLINE_REPLY } = require("../../shared/tutorPrompt");
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
@@ -17,13 +17,13 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: JSON.stringify({ error: "message is required" }) };
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply: OFFLINE_REPLY }) };
   }
 
   try {
-    const reply = await callGemini({ message, profile, history, apiKey });
+    const reply = await callGroq({ message, profile, history, apiKey });
     return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply }) };
   } catch (err) {
     console.error(err);
